@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blood Donor Prediction</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; }
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #555; margin-bottom: 28px; }
+        label { display: block; margin-top: 14px; font-weight: 600; }
+        input { width: 100%; box-sizing: border-box; padding: 10px; margin-top: 6px; }
+        button { margin-top: 22px; padding: 11px 18px; cursor: pointer; }
+        .result { margin-top: 24px; padding: 14px; border: 1px solid #bbb; border-radius: 6px; }
+        .error { margin-top: 24px; padding: 14px; border: 1px solid #bbb; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <h1>🩸 Blood Donor Prediction</h1>
+    <p class="subtitle">Enter donor information to get a prediction from the trained model.</p>
+
+    <form method="post">
+        {% for feature in feature_names %}
+            <label for="{{ feature }}">{{ feature }}</label>
+            <input
+                id="{{ feature }}"
+                name="{{ feature }}"
+                type="number"
+                step="any"
+                required
+                placeholder="Enter {{ feature }}"
+            >
+        {% endfor %}
+        <button type="submit">Predict</button>
+    </form>
+
+    {% if prediction %}
+        <div class="result"><strong>Result:</strong> {{ prediction }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+</body>
+</html>
