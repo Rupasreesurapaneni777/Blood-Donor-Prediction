@@ -1,50 +1,96 @@
 from pathlib import Path
+
 import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-DATA_PATH = Path("dataset/blood_donation.csv")
-MODEL_PATH = Path("model_bundle.pkl")
 
+# -----------------------------
+# File Paths
+# -----------------------------
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "dataset" / "blood_donation.csv"
+MODEL_PATH = BASE_DIR / "model_bundle.pkl"
+
+
+# -----------------------------
+# Load Dataset
+# -----------------------------
 if not DATA_PATH.exists():
     raise FileNotFoundError(
-        "Dataset not found. Add your CSV file as dataset/blood_donation.csv"
+        f"Dataset not found at: {DATA_PATH}"
     )
 
 df = pd.read_csv(DATA_PATH)
+
+# Remove empty rows and duplicate records
 df = df.dropna(how="all").drop_duplicates()
 
-if df.shape[1] < 2:
-    raise ValueError("Dataset must contain feature columns and one target column.")
+if df.empty:
+    raise ValueError("The dataset is empty.")
 
-# By default, the last column is treated as the target.
-# Change TARGET_COLUMN if your dataset uses a different target column.
+if df.shape[1] < 2:
+    raise ValueError(
+        "Dataset must contain at least one feature column and one target column."
+    )
+
+
+# -----------------------------
+# Target Column
+# -----------------------------
+# Change this value if your CSV uses a different target column.
 TARGET_COLUMN = df.columns[-1]
 
+if TARGET_COLUMN not in df.columns:
+    raise ValueError(
+        f"Target column '{TARGET_COLUMN}' was not found in the dataset."
+    )
+
+
+# -----------------------------
+# Features and Target
+# -----------------------------
 X = df.drop(columns=[TARGET_COLUMN])
 y = df[TARGET_COLUMN]
 
-# This starter project expects numeric input features.
-non_numeric = [c for c in X.columns if not pd.api.types.is_numeric_dtype(X[c])]
+if y.nunique() < 2:
+    raise ValueError(
+        "The target column must contain at least two classes."
+    )
+
+
+# -----------------------------
+# Validate Feature Columns
+# -----------------------------
+non_numeric = [
+    column
+    for column in X.columns
+    if not pd.api.types.is_numeric_dtype(X[column])
+]
+
 if non_numeric:
     raise ValueError(
         "Non-numeric feature columns found: "
         + ", ".join(non_numeric)
-        + ". Encode them before training or update the preprocessing pipeline."
+        + ". Please encode these columns before training."
     )
 
 numeric_features = list(X.columns)
 
+
+# -----------------------------
+# Preprocessing Pipeline
+# -----------------------------
 preprocessor = ColumnTransformer(
     transformers=[
         (
-            "num",
+            "numeric",
             Pipeline(
                 steps=[
                     ("imputer", SimpleImputer(strategy="median")),
@@ -56,33 +102,80 @@ preprocessor = ColumnTransformer(
     ]
 )
 
+
+# -----------------------------
+# Machine Learning Model
+# -----------------------------
 model = Pipeline(
     steps=[
         ("preprocessor", preprocessor),
-        ("classifier", LogisticRegression(max_iter=1000)),
+        (
+            "classifier",
+            LogisticRegression(
+                max_iter=1000,
+                random_state=42
+            ),
+        ),
     ]
 )
 
+
+# -----------------------------
+# Train-Test Split
+# -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
-    test_size=0.2,
+    test_size=0.20,
     random_state=42,
-    stratify=y if y.nunique() > 1 else None,
+    stratify=y,
 )
 
+
+# -----------------------------
+# Train Model
+# -----------------------------
 model.fit(X_train, y_train)
+
+
+# -----------------------------
+# Predictions
+# -----------------------------
 predictions = model.predict(X_test)
 
-print(f"Target column: {TARGET_COLUMN}")
-print(f"Accuracy: {accuracy_score(y_test, predictions):.4f}")
+
+# -----------------------------
+# Model Evaluation
+# -----------------------------
+accuracy = accuracy_score(y_test, predictions)
+
+print("\n" + "=" * 50)
+print("BLOOD DONOR PREDICTION - MODEL RESULTS")
+print("=" * 50)
+
+print(f"Target Column : {TARGET_COLUMN}")
+print(f"Training Data : {len(X_train)} records")
+print(f"Testing Data  : {len(X_test)} records")
+print(f"Accuracy      : {accuracy:.4f}")
+
+print("\nClassification Report:")
 print(classification_report(y_test, predictions))
 
-bundle = {
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, predictions))
+
+
+# -----------------------------
+# Save Model
+# -----------------------------
+model_bundle = {
     "model": model,
     "feature_names": numeric_features,
     "target_column": TARGET_COLUMN,
 }
 
-joblib.dump(bundle, MODEL_PATH)
-print(f"Saved trained model to: {MODEL_PATH}")
+joblib.dump(model_bundle, MODEL_PATH)
+
+print("\n" + "=" * 50)
+print(f"Model saved successfully: {MODEL_PATH}")
+print("=" * 50)
