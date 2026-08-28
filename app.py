@@ -11,7 +11,6 @@ if not MODEL_PATH.exists():
     raise FileNotFoundError(
         "model_bundle.pkl not found. Run `python train_model.py` first."
     )
-
 bundle = joblib.load(MODEL_PATH)
 model = bundle["model"]
 feature_names = bundle["feature_names"]
