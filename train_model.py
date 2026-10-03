@@ -1,17 +1,8 @@
-from pathlib import Path
+Flask==3.1.1
+pandas==2.3.3
+scikit-learn==1.9.0
+joblib==1.5.3
 
-import joblib
-import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-
-# -----------------------------
 # File Paths
 # -----------------------------
 BASE_DIR = Path(__file__).resolve().parent
